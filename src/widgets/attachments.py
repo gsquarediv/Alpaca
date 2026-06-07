@@ -77,8 +77,9 @@ def extract_content(file_type:str, file_path:str) -> str:
         else:
             return "Fetching this URL is disallowed by robots.txt"
 
-def extract_online_image(image_url:str, max_size:int) -> str | None:
-    image_response = requests.get(image_url)
+def extract_online_image(image_url: str, max_size: int) -> str | None:
+    image_response = requests.get(url=image_url, headers={"User-Agent": "AlpacaBot"})
+    image_response.raise_for_status()
     if image_response.status_code == 200:
         image_data = None
         image_path = os.path.join(cache_dir, 'image_web.jpg')
@@ -480,7 +481,7 @@ class AttachmentContainer(Gtk.ScrolledWindow):
         if file.query_info("standard::content-type", 0, None).get_content_type() == 'text/plain':
             extension = 'txt'
         else:
-            extension = file.get_path().split(".")[-1]
+            extension = file.get_path().split(".")[-1].lower()
         found_types = [key for key, value in file_types.items() if extension in value]
         if len(found_types) == 0:
             file_type = 'plain_text'
