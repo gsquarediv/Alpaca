@@ -80,9 +80,21 @@ def extract_content(file_type:str, file_path:str) -> str:
 def extract_online_image(image_url: str, max_size: int) -> str | None:
     image_response = requests.get(url=image_url, headers={"User-Agent": "AlpacaBot"})
     image_response.raise_for_status()
-    if image_response.status_code == 200:
+    complete = False
+    # parse start, end, and total from Content-Range header
+    # if all content has already been successfully fetched, set complete to true and continue
+    if image_response.status_code == 206:
+        match = re.match(r"bytes (\d+)-(\d+)/(\d+|\*)", image_response.headers["Content-Range"])
+        if match:
+            start, end, total = match.groups()
+            start = int(start)
+            end = int(end)
+            if total != "*":
+                total = int(total)
+                complete = (end + 1 == total)
+    if image_response.status_code == 200 or complete:
         image_data = None
-        image_path = os.path.join(cache_dir, 'image_web.jpg')
+        image_path = os.path.join(str(cache_dir), 'image_web.jpg')
         with open(image_path, 'wb') as handler:
             handler.write(image_response.content)
         image_data = extract_image(image_path, max_size)
