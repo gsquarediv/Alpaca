@@ -81,17 +81,22 @@ def extract_online_image(image_url: str, max_size: int) -> str | None:
     image_response = requests.get(url=image_url, headers={"User-Agent": "AlpacaBot"})
     image_response.raise_for_status()
     complete = False
-    # parse start, end, and total from Content-Range header
-    # if all content has already been successfully fetched, set complete to true and continue
     if image_response.status_code == 206:
-        match = re.match(r"bytes (\d+)-(\d+)/(\d+|\*)", image_response.headers["Content-Range"])
-        if match:
-            start, end, total = match.groups()
-            start = int(start)
-            end = int(end)
-            if total != "*":
-                total = int(total)
-                complete = (end + 1 == total)
+        # parse Content-Range header
+        # if all content has already been successfully fetched, set complete to true and continue
+        content_range = image_response.headers.get('Content-Range')
+        if content_range is not None:
+            match = re.match(r'bytes (\d+)-(\d+)/(\d+|\*)', content_range)
+            if match:
+                _, end, total = match.groups()
+                if total != '*':
+                    complete = bool(int(total) == int(end) + 1)
+                else:
+                    raise requests.exceptions.ContentDecodingError('Failed to decode chunked response')
+            else:
+                raise requests.exceptions.InvalidHeader('Content-Range header is invalid')
+        else:
+            raise requests.exceptions.InvalidHeader('Content-Range header is missing')
     if image_response.status_code == 200 or complete:
         image_data = None
         image_path = os.path.join(str(cache_dir), 'image_web.jpg')
