@@ -85,18 +85,15 @@ def extract_online_image(image_url: str, max_size: int) -> str | None:
         # parse Content-Range header
         # if all content has already been successfully fetched, set complete to true and continue
         content_range = image_response.headers.get('Content-Range')
-        if content_range is not None:
-            match = re.match(r'bytes (\d+)-(\d+)/(\d+|\*)', content_range)
-            if match:
-                _, end, total = match.groups()
-                if total != '*':
-                    complete = bool(int(total) == int(end) + 1)
-                else:
-                    raise requests.exceptions.ContentDecodingError('Failed to decode chunked response')
-            else:
-                raise requests.exceptions.InvalidHeader('Content-Range header is invalid')
-        else:
+        if content_range is None:
             raise requests.exceptions.InvalidHeader('Content-Range header is missing')
+        match = re.match(r'bytes (\d+)-(\d+)/(\d+|\*)', content_range)
+        if match is None:
+            raise requests.exceptions.InvalidHeader('Content-Range header is invalid')
+        _, end, total = match.groups()
+        if total == '*':
+            raise requests.exceptions.ContentDecodingError('Failed to decode chunked response')
+        complete = bool(int(total) == int(end) + 1)
     if image_response.status_code == 200 or complete:
         image_data = None
         image_path = os.path.join(str(cache_dir), 'image_web.jpg')
