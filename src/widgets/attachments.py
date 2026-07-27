@@ -80,9 +80,23 @@ def extract_content(file_type:str, file_path:str) -> str:
 def extract_online_image(image_url: str, max_size: int) -> str | None:
     image_response = requests.get(url=image_url, headers={"User-Agent": "AlpacaBot"})
     image_response.raise_for_status()
-    if image_response.status_code == 200:
+    complete = False
+    if image_response.status_code == 206:
+        # parse Content-Range header
+        # if all content has already been successfully fetched, set complete to true and continue
+        content_range = image_response.headers.get('Content-Range')
+        if content_range is None:
+            raise requests.exceptions.InvalidHeader('Content-Range header is missing')
+        match = re.match(r'bytes (\d+)-(\d+)/(\d+|\*)', content_range)
+        if match is None:
+            raise requests.exceptions.InvalidHeader('Content-Range header is invalid')
+        _, end, total = match.groups()
+        if total == '*':
+            raise requests.exceptions.ContentDecodingError('Failed to decode chunked response')
+        complete = bool(int(total) == int(end) + 1)
+    if image_response.status_code == 200 or complete:
         image_data = None
-        image_path = os.path.join(cache_dir, 'image_web.jpg')
+        image_path = os.path.join(str(cache_dir), 'image_web.jpg')
         with open(image_path, 'wb') as handler:
             handler.write(image_response.content)
         image_data = extract_image(image_path, max_size)

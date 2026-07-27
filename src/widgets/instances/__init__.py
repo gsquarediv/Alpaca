@@ -402,6 +402,10 @@ def create_instance_row(ins:dict) -> InstanceRow or None:
     if 'ollama' in ins.get('type'):
         for instance_cls in BaseOllama.__subclasses__():
             if getattr(instance_cls, 'instance_type', None) == ins.get('type'):
+                if old_path := ins.get('model_directory'):
+                    # Refresh Flatpak portal to directory
+                    if new_path := Gio.File.new_for_path(old_path).get_path():
+                        ins['model_directory'] = new_path
                 return InstanceRow(
                     instance=instance_cls(
                         instance_id=ins.get('id'),

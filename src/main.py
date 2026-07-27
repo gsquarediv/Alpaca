@@ -153,7 +153,7 @@ class AlpacaApplication(Adw.Application):
                          flags=Gio.ApplicationFlags.DEFAULT_FLAGS)
         self.create_action('quit', lambda *_: GLib.idle_add(self.main_alpaca_window.close), ['<primary>q'])
         self.create_action('about', self.on_about_action)
-        self.create_action('shortcuts', lambda *_: GLib.idle_add(self.show_shortcuts_dialog), ['<primary>slash'])
+        self.create_action('shortcuts', lambda *_: GLib.idle_add(self.show_shortcuts_dialog), ['<primary>question'])
         self.version = version
         self.args = parser.parse_args()
 
