@@ -89,6 +89,17 @@
   <url type="contribute">https://github.com/Jeffser/Alpaca/blob/main/CONTRIBUTING.md</url>
   <url type="vcs-browser">https://github.com/Jeffser/Alpaca</url>
   <releases>
+    <release version="9.2.5" date="2026-08-03">
+      <url type="details">https://github.com/Jeffser/Alpaca/releases/tag/9.2.4</url>
+      <description translate="no">
+        <p>Fixes</p>
+        <ul>
+          <li>Change shortcut for keyboard shortcuts dialog</li>
+          <li>Remember model directory in Flatpak portal</li>
+          <li>Remove mentions of last-notice-seen</li>
+        </ul>
+      </description>
+    </release>
     <release version="9.2.4" date="2026-04-03">
       <url type="details">https://github.com/Jeffser/Alpaca/releases/tag/9.2.4</url>
       <description translate="no">

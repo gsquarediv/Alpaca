@@ -249,7 +249,6 @@ class Instance:
                 settings = Gio.Settings(schema_id="com.jeffser.Alpaca")
                 settings_keys = {
                     'selected_instance': 'selected-instance',
-                    'last_notice_seen': 'last-notice-seen',
                     'selected_chat': 'default-chat',
                     'zoom': 'zoom',
                     'run_on_background': 'hide-on-close',
