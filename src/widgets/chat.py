@@ -563,9 +563,11 @@ class Chat(Gtk.Stack):
             self.container.append(message_element)
         GLib.idle_add(self.update_visibility)
 
-    def convert_to_ollama(self) -> list:
+    def convert_to_ollama(self, stop_before:Message = None) -> list:
         messages = []
         for message in list(self.container):
+            if message is stop_before:
+                break
             if message.get_content() and message.dt:
                 message_data = {
                     'role': ('user', 'assistant', 'system')[message.mode],
@@ -585,9 +587,11 @@ class Chat(Gtk.Stack):
                 messages.append(message_data)
         return messages
 
-    def convert_to_json(self, include_metadata:bool=False) -> list:
+    def convert_to_json(self, include_metadata:bool=False, stop_before:Message = None) -> list:
         messages = []
         for message in list(self.container):
+            if message is stop_before:
+                break
             if message.get_content() and message.dt:
                 message_data = {
                     'role': ('user', 'assistant', 'system')[message.mode],

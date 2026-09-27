@@ -87,7 +87,7 @@ class BaseInstance:
             chat_element.busy = True
             GLib.idle_add(chat_element.set_visible_child_name, 'content')
 
-        messages = chat_element.convert_to_json()[:list(chat_element.container).index(bot_message)]
+        messages = chat_element.convert_to_json(stop_before=bot_message)
 
         character_dict = SQL.get_model_preferences(model).get('character', {})
         if character_dict.get('data', {}).get('extensions', {}).get('com.jeffser.Alpaca', {}).get('enabled', False):
@@ -111,7 +111,7 @@ class BaseInstance:
     def generate_message(self, bot_message, model:str):
         chat, messages = self.prepare_chat(bot_message, model)
 
-        if chat.chat_id and chat.get_name().startswith(_("New Chat")):
+        if chat.chat_id and chat.get_name().startswith(_("New Chat")) and len(messages) > 0:
             threading.Thread(
                 target=self.generate_chat_title,
                 args=(
@@ -127,7 +127,7 @@ class BaseInstance:
     def use_tools(self, bot_message, model:str, available_tools:dict):
         chat, messages = self.prepare_chat(bot_message, model)
 
-        if chat.chat_id and chat.get_name().startswith(_("New Chat")):
+        if chat.chat_id and chat.get_name().startswith(_("New Chat")) and len(messages) > 0:
             threading.Thread(
                 target=self.generate_chat_title,
                 args=(
