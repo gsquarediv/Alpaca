@@ -2,7 +2,7 @@
 
 from gi.repository import Adw, GLib
 
-import openai, requests, json, logging, threading, re
+import openai, httpx, requests, json, logging, threading, re
 from pydantic import BaseModel
 
 from .. import dialog, tools, chat
@@ -229,6 +229,9 @@ class BaseInstance:
                 for chunk in response:
                     if chunk.choices and chunk.choices[0].delta:
                         delta = chunk.choices[0].delta
+                        reasoning = getattr(delta, "reasoning_content", None)
+                        if reasoning:
+                            bot_message.update_thinking(reasoning)
                         if delta.content:
                             bot_message.update_message(delta.content)
                     if not chat.busy:
@@ -781,9 +784,25 @@ class LlamaCpp(BaseInstance):
     instance_url = ''
     description = _('llama.cpp instance')
 
+    default_properties = {
+        **BaseInstance.default_properties,
+        'allow_self_signed_ssl': False
+    }
+
     def __init__(self, instance_id:str, properties:dict):
         self.instance_url = properties.get('url', '')
         super().__init__(instance_id, properties)
+
+    def start(self) -> None:
+        if not self.client:
+            arguments = {
+                'api_key': self.properties.get('api'),
+                'base_url': self.properties.get('url').strip()
+            }
+            if self.properties.get('allow_self_signed_ssl', False):
+                arguments['http_client'] = httpx.Client(verify=False)
+
+            self.client = openai.OpenAI(**arguments)
 
     def get_model_info(self, model_name:str) -> dict:
         try:
@@ -792,7 +811,8 @@ class LlamaCpp(BaseInstance):
                 headers={
                     'accept': 'application/json',
                     'authorization': 'Bearer {}'.format(self.properties.get('api'))
-                }
+                },
+                verify=not self.properties.get('allow_self_signed_ssl', False)
             )
             data = response.json()
 
@@ -807,7 +827,7 @@ class LlamaCpp(BaseInstance):
 
                     return model_info
         except Exception as e:
-            logger.error(e)
+            logger.exception(e)
         return {}
 
 class GenericOpenAI(BaseInstance):

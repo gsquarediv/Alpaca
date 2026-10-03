@@ -129,7 +129,7 @@ class BaseInstance:
             "model": model,
             "stream": True,
             "think": self.properties.get('think', False) and 'thinking' in model_info.get('capabilities', []),
-            "keep_alive": self.properties.get('keep_alive', 300),
+            "keep_alive": self.properties.get('keep_alive', 5) * 60,
             "tools": [v.get_metadata() for v in available_tools.values()]
         }
 
@@ -449,7 +449,7 @@ class OllamaManaged(BaseInstance):
         'temperature': 0.7,
         'seed': 0,
         'num_ctx': 16384,
-        'keep_alive': 300,
+        'keep_alive': 5,
         'model_directory': os.path.join(data_dir, '.ollama', 'models'),
         'default_model': None,
         'title_model': None,
@@ -633,7 +633,7 @@ class Ollama(BaseInstance):
         'temperature': 0.7,
         'seed': 0,
         'num_ctx': 16384,
-        'keep_alive': 300,
+        'keep_alive': 5,
         'default_model': None,
         'title_model': None,
         'think': False,
@@ -732,4 +732,25 @@ class OllamaCloud(BaseInstance):
                 logger.exception(e)
             if self.row:
                 GLib.idle_add(self.row.get_parent().unselect_all)
+        return {}
+
+class Llmman(BaseInstance):
+    # https://github.com/llmmanorg/llmman serves the Ollama API on port 17434.
+    # Models are pulled by name (OCI or hf.co), so there is no library to browse.
+    instance_type = 'ollama:llmman'
+    instance_type_display = 'llmman'
+    description = _('Local or remote AI instance served by llmman')
+
+    default_properties = {**Ollama.default_properties, 'url': 'http://localhost:17434'}
+
+    def __init__(self, instance_id:str, properties:dict):
+        self.instance_id = instance_id
+        self.properties = {}
+        self.row = None
+        for key in self.default_properties:
+            self.properties[key] = properties.get(key, self.default_properties.get(key))
+
+        self.client = None
+
+    def get_available_models(self) -> dict:
         return {}

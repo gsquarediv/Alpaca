@@ -169,20 +169,26 @@ class BlockContainer(Gtk.Box):
         Used for live generation rendering
         """
 
-        for block in blocks.text_to_block_list(content):
-            if len(list(self)) <= 1:
-                GLib.idle_add(self.prepend, block)
+        def append_text(block:blocks.Text, content:str):
+            if not block.get_content().endswith('\n') or content.startswith('\n'):
+                block.append_content('\n{}'.format(content))
             else:
-                if isinstance(list(self)[-2], blocks.Text) and isinstance(block, blocks.Text):
-                    if not list(self)[-2].get_content().endswith('\n') or block.get_content().startswith('\n'):
-                        GLib.idle_add(list(self)[-2].append_content, '\n{}'.format(block.get_content()))
-                    else:
-                        GLib.idle_add(list(self)[-2].append_content, block.get_content())
-                elif isinstance(list(self)[-2], blocks.Text) and not isinstance(block, blocks.Text):
-                    GLib.idle_add(list(self)[-2].set_content, list(self)[-2].get_content().strip())
-                    GLib.idle_add(self.insert_child_after, block, list(self)[-2])
+                block.append_content(content)
+        previous_block = list(self)[-2] if len(list(self)) > 1 else None
+        for block in blocks.text_to_block_list(content):
+            if previous_block is None:
+                GLib.idle_add(self.prepend, block)
+                previous_block = block
+            else:
+                if isinstance(previous_block, blocks.Text) and isinstance(block, blocks.Text):
+                    GLib.idle_add(append_text, previous_block, block.get_content())
+                elif isinstance(previous_block, blocks.Text) and not isinstance(block, blocks.Text):
+                    GLib.idle_add(previous_block.set_content, previous_block.get_content().strip())
+                    GLib.idle_add(self.insert_child_after, block, previous_block)
+                    previous_block = block
                 else:
-                    GLib.idle_add(self.insert_child_after, block, list(self)[-2])
+                    GLib.idle_add(self.insert_child_after, block, previous_block)
+                    previous_block = block
         GLib.idle_add(self.check_if_should_tts)
 
     def get_content(self) -> list:
@@ -377,9 +383,11 @@ class Message(Gtk.Box):
         if chat_element and root:
             chat_element.stop_message()
         self.dt = datetime.datetime.now()
-        buffer = self.block_container.generating_block.buffer
-        final_text = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
-        GLib.idle_add(self.block_container.add_content, final_text)
+
+        def add_buffer_content(buffer:Gtk.TextBuffer):
+            final_text = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), False)
+            self.block_container.add_content(final_text)
+        GLib.idle_add(add_buffer_content, self.block_container.generating_block.buffer)
         GLib.idle_add(self.block_container.remove_generating_block)
         GLib.idle_add(self.update_profile_picture)
         GLib.idle_add(send_notification)

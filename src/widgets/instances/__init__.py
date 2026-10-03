@@ -69,7 +69,7 @@ class InstancePreferencesDialog(Adw.Dialog):
         self.set_simple_element_value(self.name_el)
 
         self.set_simple_element_value(self.url_el)
-        if self.instance.instance_type in ('ollama', 'ollama:managed', 'openai:generic', 'llama_cpp'):
+        if self.instance.instance_type in ('ollama', 'ollama:managed', 'ollama:llmman', 'openai:generic', 'llama_cpp'):
             if self.instance.instance_type == 'ollama:managed':
                 try:
                     port = int(self.instance.properties.get('url').split(':')[-1])
@@ -92,7 +92,7 @@ class InstancePreferencesDialog(Adw.Dialog):
             if self.instance.instance_type == 'cloudflare':
                 normal_api_title = _('API Key (account_id:api_key)')
             else:
-                normal_api_title = _('API Key (Optional)' if self.instance.instance_type == 'ollama' else _('API Key'))
+                normal_api_title = _('API Key (Optional)' if self.instance.instance_type in ('ollama', 'ollama:llmman') else _('API Key'))
             
             unchanged_api_title = _('API Key (Unchanged)')
             
@@ -278,8 +278,9 @@ class InstancePreferencesDialog(Adw.Dialog):
         index = combo.get_selected()
         self.keep_alive_minutes_el.set_visible(index == 0)
         if index == 0:
+            minutes = self.instance.properties.get('keep_alive', 5)
             self.keep_alive_minutes_el.set_adjustment(Gtk.Adjustment(
-                value=int(self.instance.properties.get('keep_alive', 60) / 60),
+                value=minutes if minutes > 0 else 5,
                 lower=1,
                 upper=1440,
                 step_increment=1
